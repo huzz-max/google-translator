@@ -15,6 +15,8 @@ part './model/translation.dart';
 ///
 class GoogleTranslator {
   var _baseUrl = 'translate.googleapis.com'; // faster than translate.google.com
+  late String _fixedIp;
+  var _useHttp = false;
   final _path = '/translate_a/single';
   final _tokenProvider = GoogleTokenGenerator();
   final _languageList = LanguageList();
@@ -47,8 +49,14 @@ class GoogleTranslator {
       'q': sourceText
     };
 
-    var url = Uri.https(_baseUrl, _path, parameters);
-    final data = await http.get(url);
+    bool hasFixedIp = _fixedIp != null;
+    var urlCreator = Uri.https;
+    if (_useHttp) {
+      urlCreator = Uri.http;
+    }
+
+    var url = urlCreator(hasFixedIp ? _fixedIp : _baseUrl, _path, parameters);
+    final data = await http.get(url, headers: hasFixedIp ? {"Host": _baseUrl} : null);
 
     if (data.statusCode != 200) {
       throw http.ClientException('Error ${data.statusCode}: ${data.body}', url);
@@ -89,6 +97,8 @@ class GoogleTranslator {
 
   /// Sets base URL for countries that default URL doesn't work
   set baseUrl(String url) => _baseUrl = url;
+  set fixedIp(String fixedIp) => _fixedIp = fixedIp;
+  set useHttp(bool useHttp) => _useHttp = useHttp;
 }
 
 enum ClientType {
